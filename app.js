@@ -1,86 +1,40 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require("body-parser");
-const createError = require('http-errors')
-const axios = require('axios');
-require('dotenv').config()
-require('./src/helpers/init_mongodb')
-const routeManagement = require('./src/routeManagement');
-const errorHandler = require("./src/middleware/errorHandler");
+import express from 'express';
+import mongoose from 'mongoose';
+import redis from 'redis';
+import config from './config/config.js';
+import expressConfig from './frameworks/webserver/express.js';
+import routes from './frameworks/webserver/routes/index.js';
+import serverConfig from './frameworks/webserver/server.js';
+import mongoDbConnection from './frameworks/database/mongoDB/connection.js';
+import redisConnection from './frameworks/database/redis/connection.js';
+// middlewares
+import errorHandlingMiddleware from './frameworks/webserver/middlewares/errorHandlingMiddleware.js';
+import http from 'http';
+
+
 const app = express();
-const server = require('http').createServer(app);
-require('./src/jobs/trackingJob');
-require('./src/rabbit/Consumers');
-
-let socketIo = require("socket.io");
+const server = http.createServer(app);
 
 
-const ws = socketIo(server, {
-  serveClient: true,
-  // pingInterval: 60000,
-  // pingTimeout: 60000000,
-  reconnection: true,
-  reconnectionDelay: 500,
-  reconnectionAttempts: 10,
-  cors: {
-    origin: "http://localhost:8484",
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-  transports: [
-    "websocket",
-    "polling"
-  ]
-})
+// express.js configuration (middlewares etc.)
+expressConfig(app);
 
-var socketHandler = require('./src/sockets/socket')
-socketHandler.Handle(ws);
+// server configuration and start
+serverConfig(app, mongoose, server, config).startServer();
 
+// DB configuration and connection create
+mongoDbConnection(mongoose, config, {
+  autoIndex: true,
+  connectTimeoutMS: 1000
+}).connectToMongo();
 
+const redisClient = redisConnection(redis, config).createRedisClient();
 
+// routes for each endpoint
+routes(app, express, redisClient);
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json()); // for parsing application/json
-app.use(bodyParser.urlencoded({
-  extended: true
-})); // for parsing application/x-www-form-urlencoded
+// error handling middleware
+app.use(errorHandlingMiddleware);
 
-
-// logging
-app.use(function(req, res, next) {
-  console.log('path: ' + req.path)
-  console.log('query:')
-  console.log(req.query)
-  console.log('body:')
-  console.log(req.body)
-  console.log('----------------------------')
-  next()
-})
-
-
-
-// Routes
-app.get("/", (req, res) => {
-  res.send("Hello World! ");
-});
-
-routeManagement.RegisterAllRoutes(app);
-
-app.use(async (req, res, next) => {
-  next(createError.NotFound('صفحه مورد نظر یافت نشد!'))
-})
-
-//Erro Handler
-app.use(errorHandler);
-
-// Start Server
-const port = process.env.PORT || 3000;
-
-server.listen(port, (err) => {
-
-  if (err) throw new Error(err);
-
-  console.log(`Server is running on port ${port}`);
-
-});
+// Expose app
+export default app;

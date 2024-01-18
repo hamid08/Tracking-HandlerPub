@@ -1,35 +1,28 @@
 {
   "name": "tracking-handler",
   "version": "1.0.0",
-  "description": "",
+  "description": "dispatcher traking data to traking agent",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "win": "SET NODE_ENV=production & node app.js",
-    "linux": "NODE_ENV=production node app.js"
+    "start": "pm2 start app.js  --no-daemon",
+    "dev": "set NODE_ENV=development && nodemon --exec babel-node app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
-    "@hapi/joi": "^17.1.1",
-    "amqplib": "^0.10.3",
-    "axios": "^1.6.2",
-    "cors": "^2.8.5",
-    "crypto": "^1.0.1",
+    "@babel/node": "^7.22.19",
+    "@godaddy/terminus": "^4.12.1",
+    "body-parser": "^1.20.2",
+    "compression": "^1.7.4",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "http-errors": "^2.0.0",
-    "lodash": "^4.17.21",
-    "moment": "^2.29.4",
+    "helmet": "^7.1.0",
     "mongoose": "^8.0.0",
-    "node-cron": "^3.0.3",
+    "morgan": "^1.10.0",
     "nodemon": "^3.0.1",
-    "redis": "^4.6.10",
-    "socket.io": "^4.7.2",
-    "socket.io-client": "^4.7.2",
-    "url": "^0.11.3"
+    "pm2": "^5.3.0",
+    "redis": "^4.6.10"
   }
 }

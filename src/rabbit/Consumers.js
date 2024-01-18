@@ -3,7 +3,7 @@ const rabbit = require('./RabbitMQ')
 const trackingService = require('../services/trackingService');
 
 
-
+ 
 
 
 console.log('Ready for Consume messages in the %s queue...', process.env.TRACKINGRELAY_QUEUE);

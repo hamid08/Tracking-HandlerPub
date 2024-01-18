@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const trackingService = require('../services/trackingService');
 const { tryCatch } = require('../common/utils/tryCatch');
-const { json } = require('express');
 
 
 router.post('/api/tracking/device/receive-data',
