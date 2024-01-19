@@ -1,6 +1,6 @@
 const Tracking = require('../models/Tracking');
 const createError = require('http-errors')
-const generator = require('../common/utils/generator')
+const generator = require('../../application/utils/generator')
 const socketServer = require('../sockets/socket');
 var redisClient = require('../helpers/init_redis')
 var moment = require('moment');

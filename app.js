@@ -32,8 +32,12 @@ serverConfig(app, mongoose, server, config).startServer();
 
 // DB configuration and connection create
 mongoDbConnection(mongoose, config, {
-  autoIndex: true,
-  connectTimeoutMS: 1000
+  autoIndex: false,
+  maxPoolSize: 50,
+  wtimeoutMS: 2500,
+  useNewUrlParser: true , // feel free to remove, no longer used by the driver.
+  connectTimeoutMS: 360000,
+  socketTimeoutMS:360000,
 }).connectToMongo();
 
 const redisClient = redisConnection(redis, config).createRedisClient();
@@ -53,7 +57,9 @@ rabbitMq.getInstance()
   })
 
 
-rabbitMqConsumer(rabbitMq, config);
+rabbitMqConsumer(rabbitMq,redisClient ,config);
+
+
 
 // error handling middleware
 app.use(errorHandlingMiddleware);
