@@ -52,8 +52,8 @@ export default function serverConfig(app, mongoose, serverInit, config) {
       beforeShutdown
     }).listen(config.port, config.ip, () => {
       console.log(
-        'Express server listening on %d, in %s mode',
-        config.port,
+        'Express server listening on http://%s:%d, in %s mode',
+        config.ip,config.port,
         app.get('env')
       );
     });

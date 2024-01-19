@@ -1,10 +1,14 @@
+
 export default function connection(redis, config) {
   const createRedisClient = function createRedisClient() {
     const client = redis.createClient(config.redis.uri);
     (async () => {
       try {
-        // Connect to redis server
-        await client.connect();
+
+        var isOpen = client.isOpen;
+        if (!isOpen) {
+          await client.connect();
+        }
       }
       catch (err) {
         console.log(err)
@@ -19,14 +23,27 @@ export default function connection(redis, config) {
   });
 
   createRedisClient().on("error", (err) => {
-    console.log(`Redis Connection Error:${err}`);
+    (async () => {
+      try {
+
+        var isOpen = createRedisClient().isOpen;
+        if (!isOpen) {
+          await createRedisClient().connect();
+        }
+      }
+      catch (err) {
+        console.log(err)
+      }
+    })();
+
+    console.log(`Redis Error:${err}`);
   });
 
   // Close the connection when there is an interrupt sent from keyboard
-  // process.on('SIGINT', () => {
-  //   createRedisClient().quit();
-  //   console.log('redis client quit');
-  // });
+  process.on('SIGINT', () => {
+    createRedisClient().quit();
+    console.log('redis client quit');
+  });
 
   return {
     createRedisClient
