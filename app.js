@@ -63,7 +63,7 @@ rabbitMqConsumer(rabbitMq, redisClient, config);
 
 
 // socket-io Configuration
-socketConnection(new Server(server, {
+socketConnection().trySocket(new Server(server, {
   serveClient: true,
   pingInterval: 60000,
   pingTimeout: 60000000,

@@ -1,32 +1,35 @@
-// const socketAckService = require('../services/SocketAckService')
+import socketService from '../../../application/services/socketService.js';
 
+let customerSockets = {};
 export default function connection(io) {
 
-    var customerSockets = {};
-    io.on('connection', (socket) => {
-        socket.emit('authenticated');
+    const _socketService = socketService();
 
-        // Get the user's ID from the socket handshake data.
-        var customerId = socket.handshake.query.customerId;
+    async function trySocket(io) {
+        io.on('connection', (socket) => {
+            socket.emit('authenticated');
 
-        // Store the reference to this socket by the user's ID.
-        customerSockets[customerId] = socket;
+            // Get the user's ID from the socket handshake data.
+            var customerId = socket.handshake.query.customerId;
 
-        console.log('customer ' + customerId + ' Socket connected');
+            // Store the reference to this socket by the user's ID.
+            customerSockets[customerId] = socket;
 
-        socket.on('disconnect', () => {
-            // Remove the reference to this socket when the user disconnects.
-            delete customerSockets[customerId];
-            console.log('customer ' + customerId + ' Socket disconnected');
+            console.log('customer ' + customerId + ' Socket connected');
+
+            socket.on('disconnect', () => {
+                // Remove the reference to this socket when the user disconnects.
+                delete customerSockets[customerId];
+                console.log('customer ' + customerId + ' Socket disconnected');
+            });
+
+            //Customer Event Response
+            socket.on('trackingResponse', async (data) => {
+                await _socketService.HandleSocketResponse(data);
+
+            });
         });
-
-        //Customer Event Response
-        socket.on('trackingResponse', async (data) => {
-            await socketAckService.HandleAckData(data);
-
-        });
-    });
-
+    }
 
 
 
@@ -41,6 +44,7 @@ export default function connection(io) {
     }
 
     return {
-        sendLocationsToCustomer
+        sendLocationsToCustomer,
+        trySocket
     }
 }

@@ -3,6 +3,7 @@ import trackingDataRepositoryMongoDB from '../../frameworks/database/mongoDB/rep
 import generator from '../utils/generator.js'
 import trackingDataModel from '../../src/entities/trackingData.js'
 
+import webSocket from '../../frameworks/services/socket/connection.js';
 
 
 function createTrackingDataModel(element, trackerInfo) {
@@ -37,7 +38,7 @@ export default function rabbitService(redisClient) {
         try {
             const _redisRepository = trackingDataRepositoryRedis(redisClient);
             const _mongoRepository = trackingDataRepositoryMongoDB();
-
+            const _webSocket = webSocket();
 
             //Check Is Not Null Locations
             if (data == null || data.locations.length < 1) return;
@@ -68,12 +69,19 @@ export default function rabbitService(redisClient) {
                     sent: trackingDataEntity.getSent(),
                     speed: trackingDataEntity.getSpeed(),
                     trafficDate: trackingDataEntity.getTrafficDate(),
+
+                    // just For send
+                    deviceIdentity: trackerInfo.DeviceIdentity,
+                    deviceTerminalNo: trackerInfo.DeviceTerminalNo,
+                    customerTerminalNo: trackerInfo.CustomerTerminalNo,
                 }
 
                 newTrackingDataList.push(newTrackingData);
             })
 
             await _mongoRepository.addRange(newTrackingDataList);
+            await _webSocket.sendLocationsToCustomer(newTrackingDataList, data.latestLocation, trackerInfo.CustomerId);
+
             return true;
 
         }

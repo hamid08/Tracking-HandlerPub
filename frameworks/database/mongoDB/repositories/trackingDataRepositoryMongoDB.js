@@ -31,16 +31,16 @@ export default function trackingDataRepositoryMongoDB() {
       })
   };
 
-  const updateByCodeSuccessSent = (code) => {
-    updateByCode({
+  const updateManyByCodeSuccessSent = async (codeList) => {
+    await updateManyByCode(codeList,{
       $set: {
         sent: true
       }
     });
   }
 
-  const updateByCodeFailedSent = (code) => {
-    updateByCode({
+  const updateManyByCodeFailedSent = async (codeList) => {
+    await updateManyByCode(codeList,{
       $set: {
         sent: false
       },
@@ -50,23 +50,27 @@ export default function trackingDataRepositoryMongoDB() {
     });
   }
 
-  const updateByCode = async (code, query) => {
-    return await TrackingDataModel.findOneAndUpdate(
-      { code: code },
-      query,
-      { new: true }
-    );
+  const updateManyByCode = async (codeList, query) => {
+    var dateFormat = moment().format('YYYY-MM-DD HH:mm:ss');
+    return await TrackingDataModel.updateMany(
+      { code: { $in: codeList } }, query).exec()
+      .then(result => {
+        console.log(`*** Socket Response *** ===> Update Tracking Data Status Successfully Completed!`, dateFormat);
+      })
+      .catch(err => {
+        console.log(`*** Socket Response *** ===> Update Tracking Data Status Failed!`, err);
+      });
   };
 
-  const deleteManyByCustomerIdAndSentIsTrue = (customerId) => {
-    deleteManyByQuery({
+  const deleteManyByCustomerIdAndSentIsTrue = async (customerId) => {
+    await deleteManyByQuery({
       sent: true,
       customerId: customerId
     });
   }
 
-  const deleteManyByCustomerIdAndSentIsTrueAndTrafficDate = (customerId, allowDate) => {
-    deleteManyByQuery({
+  const deleteManyByCustomerIdAndSentIsTrueAndTrafficDate = async (customerId, allowDate) => {
+    await deleteManyByQuery({
       sent: true,
       customerId: customerId,
       TrafficDate: { $lte: allowDate }
@@ -93,8 +97,8 @@ export default function trackingDataRepositoryMongoDB() {
     addRange,
     deleteManyByCustomerIdAndSentIsTrue,
     deleteManyByCustomerIdAndSentIsTrueAndTrafficDate,
-    updateByCodeSuccessSent,
-    updateByCodeFailedSent
+    updateManyByCodeSuccessSent,
+    updateManyByCodeFailedSent
   };
 }
 
