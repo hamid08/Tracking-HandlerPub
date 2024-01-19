@@ -1,20 +1,8 @@
-const socketAckService = require('../services/SocketAckService')
+// const socketAckService = require('../services/SocketAckService')
 
+export default function connection(io) {
 
-var customerSockets = {};
-
-function Handle(io) {
-
-
-    io.use((socket, next) => {
-        const token = socket.handshake.auth.token;
-        if (token !== process.env.AuthToken) {
-            return next(new Error('Authentication error'));
-        }
-
-        next();
-    });
-
+    var customerSockets = {};
     io.on('connection', (socket) => {
         socket.emit('authenticated');
 
@@ -39,19 +27,20 @@ function Handle(io) {
         });
     });
 
-}
 
 
-async function SendLocationsToCustomer(locations, latestLocation, customerId) {
 
-    if (customerSockets[customerId]) {
-        customerSockets[customerId].emit('receiveTrackingData', { locations, latestLocation });
+    async function sendLocationsToCustomer(locations, latestLocation, customerId) {
 
-    } else {
-        console.log('customer ' + customerId + ' not found connection');
+        if (customerSockets[customerId]) {
+            customerSockets[customerId].emit('receiveTrackingData', { locations, latestLocation });
+
+        } else {
+            console.log('customer ' + customerId + ' not found connection');
+        }
+    }
+
+    return {
+        sendLocationsToCustomer
     }
 }
-
-
-
-module.exports = { Handle, SendLocationsToCustomer }

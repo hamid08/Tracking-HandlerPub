@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import redis from 'redis';
 import amqp from 'amqplib';
 import lodash from 'lodash';
+import { Server } from 'socket.io';
 
 import config from './config/config.js';
 import expressConfig from './frameworks/webserver/express.js';
@@ -12,17 +13,17 @@ import mongoDbConnection from './frameworks/database/mongoDB/connection.js';
 import redisConnection from './frameworks/database/redis/connection.js';
 import rabbitMqConnection from './frameworks/services/rabbitMQ/connection.js';
 import rabbitMqConsumer from './frameworks/services/rabbitMQ/consumers.js';
+import socketConnection from './frameworks/services/socket/connection.js';
 
 
 
 // middlewares
 import errorHandlingMiddleware from './frameworks/webserver/middlewares/errorHandlingMiddleware.js';
-import http from 'http';
+import { createServer } from 'http';
 
 
 const app = express();
-const server = http.createServer(app);
-
+const server = createServer(app);
 
 // express.js configuration (middlewares etc.)
 expressConfig(app);
@@ -30,14 +31,15 @@ expressConfig(app);
 // server configuration and start
 serverConfig(app, mongoose, server, config).startServer();
 
+
 // DB configuration and connection create
 mongoDbConnection(mongoose, config, {
   autoIndex: false,
   maxPoolSize: 50,
   wtimeoutMS: 2500,
-  useNewUrlParser: true , // feel free to remove, no longer used by the driver.
+  useNewUrlParser: true, // feel free to remove, no longer used by the driver.
   connectTimeoutMS: 360000,
-  socketTimeoutMS:360000,
+  socketTimeoutMS: 360000,
 }).connectToMongo();
 
 const redisClient = redisConnection(redis, config).createRedisClient();
@@ -57,7 +59,27 @@ rabbitMq.getInstance()
   })
 
 
-rabbitMqConsumer(rabbitMq,redisClient ,config);
+rabbitMqConsumer(rabbitMq, redisClient, config);
+
+
+// socket-io Configuration
+socketConnection(new Server(server, {
+  serveClient: true,
+  pingInterval: 60000,
+  pingTimeout: 60000000,
+  reconnection: true,
+  reconnectionDelay: 500,
+  reconnectionAttempts: 10,
+  cors: {
+    origin: "http://localhost:8485",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  transports: [
+    "websocket",
+    "polling"
+  ]
+}));
 
 
 
