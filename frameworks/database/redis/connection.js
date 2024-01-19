@@ -40,10 +40,15 @@ export default function connection(redis, config) {
   });
 
   // Close the connection when there is an interrupt sent from keyboard
-  process.on('SIGINT', () => {
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
+  process.on("exit", cleanup);
+  
+
+  async function cleanup() {
     createRedisClient().quit();
     console.log('redis client quit');
-  });
+  }
 
   return {
     createRedisClient
