@@ -1,0 +1,40 @@
+export default function trackingData(
+  code: string,
+  altitude: any,
+  angle: any,
+  customerId: any,
+  gsmSignal: any,
+  hdop: any,
+  imei: any,
+  latitude: any,
+  longitude: any,
+  metaData: any,
+  numSendingAttempts: number,
+  odometer: any,
+  positionStatus: any,
+  satelliteCount: any,
+  sent: boolean,
+  speed: any,
+  trafficDate: any,
+) {
+  return {
+    getCode: () => code,
+    getAltitude: () => altitude,
+    getAngle: () => angle,
+    getCustomerId: () => customerId,
+    getGsmSignal: () => gsmSignal,
+    getHDOP: () => hdop,
+    getIMEI: () => imei,
+    getLatitude: () => latitude,
+    getLongitude: () => longitude,
+    getMetaData: () => metaData,
+    getNumSendingAttempts: () => numSendingAttempts,
+    getOdometer: () => odometer,
+    getPositionStatus: () => positionStatus,
+    getSatelliteCount: () => satelliteCount,
+    getSent: () => sent,
+    getSpeed: () => speed,
+    getTrafficDate: () => trafficDate
+  };
+}
+
