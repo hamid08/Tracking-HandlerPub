@@ -1,7 +1,9 @@
 
 export default function connection(redis: any, config: any) {
   const createRedisClient = function createRedisClient() {
-    const client = redis.createClient(config.redis.uri);
+    const client = redis.createClient({
+        url:config.redis.uri
+      });
     (async () => {
       try {
 

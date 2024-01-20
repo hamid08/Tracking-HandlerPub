@@ -21,9 +21,18 @@ function consumers(rabbitMq, redisClient, config) {
         rabbitMq.getInstance()
             .then((broker) => {
             broker.subscribe(trackingRelayQueue, (msg, ack) => __awaiter(this, void 0, void 0, function* () {
-                var result = yield _rabbitService.saveTrackingData(JSON.parse(msg.content.toString()));
-                if (result != undefined && result != false && result != null && result == true)
-                    ack();
+                try {
+                    if (msg == null && msg.content == null) {
+                        const testMessage = JSON.parse(msg.content.toString());
+                        return;
+                    }
+                    var result = yield _rabbitService.saveTrackingData(JSON.parse(msg.content.toString()));
+                    if (result != undefined && result != false && result != null && result == true)
+                        ack();
+                }
+                catch (err) {
+                    return;
+                }
             }));
         });
     }

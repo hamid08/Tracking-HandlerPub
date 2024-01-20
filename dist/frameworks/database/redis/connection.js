@@ -11,7 +11,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 function connection(redis, config) {
     const createRedisClient = function createRedisClient() {
-        const client = redis.createClient(config.redis.uri);
+        const client = redis.createClient({
+            url: config.redis.uri
+        });
         (() => __awaiter(this, void 0, void 0, function* () {
             try {
                 var isOpen = client.isOpen;

@@ -1,5 +1,6 @@
 # Use Node.js version 16.14.2 as a base image
-FROM edge.pishgamanasia.ir/pasand/dev/node:1
+#FROM edge.pishgamanasia.ir/pasand/dev/node:1
+FROM node:16
 
 # Set the working directory in the container
 WORKDIR /app
@@ -18,4 +19,4 @@ COPY . .
 EXPOSE 8383
 
 # Define the command to run your app
-CMD ["node", "app.js"]
+CMD [ "npm", "start" ]
