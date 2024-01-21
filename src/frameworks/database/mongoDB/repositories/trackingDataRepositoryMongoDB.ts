@@ -25,7 +25,7 @@ export default function trackingDataRepositoryMongoDB() {
       .insertMany(trackingDataEntities)
       .then(result => {
         console.log(`Locations Inserted:${result.length}, IMEI: ${trackingDataEntities[0].imei}, Date: ${dateFormat}`);
-      }).catch(err => { console.error('Error Inserting Locations:', err); })
+      })
   };
 
   const updateManyByCodeSuccessSent = async (codeList: string[]) => {

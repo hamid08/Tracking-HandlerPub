@@ -71,15 +71,15 @@ TrackingDataSchema.index({ sent: 1, customerId: 1 });
 
 const TrackingDataModel = mongoose.model('TrackingData', TrackingDataSchema, 'TrackingData');
 
-const createIndexes = async () => {
-    try {
-        await TrackingDataModel.createIndexes();
-        console.log('Indexes created successfully');
-    } catch (err) {
-        console.error('Error creating indexes:', err);
-    }
-};
+// const createIndexes = async () => {
+//     try {
+//         await TrackingDataModel.createIndexes();
+//         console.log('Indexes created successfully');
+//     } catch (err) {
+//         console.error('Error creating indexes:', err);
+//     }
+// };
 
-createIndexes();
+// createIndexes();
 
 export default TrackingDataModel;

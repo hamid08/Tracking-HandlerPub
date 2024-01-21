@@ -6,7 +6,7 @@ import trackingDataModel from '../../entities/trackingData';
 import webSocket from '../../frameworks/services/socket/connection';
 
 
-function createTrackingDataModel(element:any, trackerInfo:any) {
+function createTrackingDataModel(element: any, trackerInfo: any) {
     const uniqCode = generator().generateUniqueCode();
 
     return trackingDataModel(
@@ -31,10 +31,9 @@ function createTrackingDataModel(element:any, trackerInfo:any) {
 
 }
 
-export default function rabbitService(redisClient:any) {
+export default function rabbitService(redisClient: any) {
 
-    async function saveTrackingData(data:any) {
-
+    async function saveTrackingData(data: any) {
         try {
             const _redisRepository = trackingDataRepositoryRedis(redisClient);
             const _mongoRepository = trackingDataRepositoryMongoDB();
@@ -47,8 +46,8 @@ export default function rabbitService(redisClient:any) {
             var trackerInfo = await _redisRepository.getDevice(data.latestLocation.imei);
             if (trackerInfo == null || trackerInfo == undefined) return false;
 
-            const newTrackingDataList:any[] = [];
-            data.locations.forEach((element:any) => {
+            const newTrackingDataList: any[] = [];
+            data.locations.forEach((element: any) => {
 
                 const trackingDataEntity = createTrackingDataModel(element, trackerInfo);
                 var newTrackingData = {
@@ -78,9 +77,19 @@ export default function rabbitService(redisClient:any) {
 
                 newTrackingDataList.push(newTrackingData);
             })
+            try {
+                await _mongoRepository.addRange(newTrackingDataList);
+            } catch (err) {
+                console.error(err);
+                return false;
+            }
 
-            await _mongoRepository.addRange(newTrackingDataList);
-            await _webSocket.sendLocationsToCustomer(newTrackingDataList, data.latestLocation, trackerInfo.CustomerId);
+            try {
+                await _webSocket.sendLocationsToCustomer(newTrackingDataList, data.latestLocation, trackerInfo.CustomerId);
+            } catch (err) {
+                console.error(err);
+                return false;
+            }
 
             return true;
 

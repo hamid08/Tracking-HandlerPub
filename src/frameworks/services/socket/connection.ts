@@ -1,12 +1,32 @@
 import socketService from '../../../application/services/socketService.js';
+import config from '../../../config/config'
 
-let customerSockets:any = {};
+
+let customerSockets: any = {};
 export default function connection() {
+    async function trySocket(io: any) {
 
-    const _socketService = socketService();
+        io.use((socket: any, next: any) => {
+            try {
+                const token = socket.handshake.auth.token;
+                var customerId = socket.handshake.query.customerId;
+                if (token !== config.socket.auth_token) {
+                    console.log(`Authenticated Error Socket Customer`, customerId);
+                    return new Error(`Authenticated Error Socket Customer ${customerId}`);
+                }
 
-    async function trySocket(io:any) {
-        io.on('connection', (socket:any) => {
+                console.log(`Customer Authenticated Socket`, customerId);
+                next();
+            }
+            catch (err) {
+                console.log('Customer Authenticated Socket Error')
+            }
+        });
+
+
+
+
+        io.on('connection', (socket: any) => {
             socket.emit('authenticated');
 
             // Get the user's ID from the socket handshake data.
@@ -24,8 +44,8 @@ export default function connection() {
             });
 
             //Customer Event Response
-            socket.on('trackingResponse', async (data:any) => {
-                await _socketService.HandleSocketResponse(data);
+            socket.on('trackingResponse', async (data: any) => {
+                await socketService().HandleSocketResponse(data);
 
             });
         });
@@ -33,7 +53,7 @@ export default function connection() {
 
 
 
-    async function sendLocationsToCustomer(locations:any, latestLocation:any, customerId:any) {
+    async function sendLocationsToCustomer(locations: any, latestLocation: any, customerId: any) {
 
         if (customerSockets[customerId]) {
             customerSockets[customerId].emit('receiveTrackingData', { locations, latestLocation });
