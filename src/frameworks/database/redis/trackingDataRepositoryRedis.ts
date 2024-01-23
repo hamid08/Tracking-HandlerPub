@@ -1,4 +1,11 @@
-export default function TrackingDataRepositoryRedis(redisClient: any) {
+import redisConnection from "./connection";
+
+
+export default function TrackingDataRepositoryRedis() {
+
+  if (!redisConnection.connection)
+    redisConnection.connect();
+  const redisClient = redisConnection.connection;
 
   async function getDevice(imei: any) {
     const trackerInfoRedis = await redisClient.hGetAll(`Device_${imei}`);
@@ -16,7 +23,26 @@ export default function TrackingDataRepositoryRedis(redisClient: any) {
 
   };
 
+  async function getAllCustomer() {
+    const customerInfoRedis = await redisClient.hGetAll(`Customers`);
+    if (customerInfoRedis == null || customerInfoRedis == undefined)
+      return null;
+
+    try {
+      const trackerInfo = JSON.parse(customerInfoRedis.data);
+      return trackerInfo;
+    }
+    catch (err) {
+      console.log(`Not Found Customer In Redis`)
+      return null;
+    }
+
+  };
+
+
+
   return {
-    getDevice
+    getDevice,
+    getAllCustomer
   }
 }

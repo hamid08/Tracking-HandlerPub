@@ -1,21 +1,22 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import * as redis from 'redis';
 import amqp from 'amqplib';
 import lodash from 'lodash';
 import * as socketIO from 'socket.io';
-import nodeCron from 'node-cron';
 
 
+import config from './config/config';
 import expressConfig from './frameworks/webserver/express';
 import routes from './frameworks/webserver/routes/index';
 import serverConfig from './frameworks/webserver/server';
 import mongoDbConnection from './frameworks/database/mongoDB/connection';
 import redisConnection from './frameworks/database/redis/connection';
-import rabbitMqConnection from './frameworks/services/rabbitMQ/connection';
+import mqConnection from './frameworks/services/rabbitMQ/connection';
 import rabbitMqConsumer from './frameworks/services/rabbitMQ/consumers';
 import socketConnection from './frameworks/services/socket/connection';
 import jobManager from './frameworks/services/jobs/jobs';
-import * as rmq from './frameworks/services/rabbitMQ/receiveMessage';
+
 
 
 // middlewares
@@ -30,39 +31,22 @@ const server = createServer(app);
 expressConfig(app);
 
 // server configuration and start
-serverConfig(app, server).startServer();
+serverConfig(app, mongoose, server, config).startServer();
 
 
 // DB configuration and connection create
-mongoDbConnection().connectToMongo();
+mongoDbConnection(mongoose, config, {
+  autoIndex: false,
+  maxPoolSize: 50,
+  wtimeoutMS: 2500,
+  connectTimeoutMS: 360000,
+  socketTimeoutMS: 360000,
+}).connectToMongo();
 
-
-// Redis
-const redisClient = redisConnection()
-  .connectToRedis();
-
-
+// const redisClient = redisConnection(redis, config).createRedisClient();
 
 // routes for each endpoint
-routes(app, express);
-
-
-// Reconnect to RabbitMQ on container restart
-const reconnect = () => {
-  console.log("Reconnecting to RabbitMQ...");
-  rmq.startReceiving(redisClient).catch((err) => {
-    console.error("Error starting receiving: ", err);
-    setTimeout(reconnect, 5000); // try to reconnect every 5 seconds
-  });
-};
-
-// Start receiving messages
-rmq.startReceiving(redisClient).catch((err) => {
-  console.error("Error starting receiving: ", err);
-  setTimeout(reconnect, 5000); // try to reconnect every 5 seconds
-});
-
-
+// routes(app, express, redisClient);
 
 
 // rabbitMq Configuration
@@ -74,7 +58,6 @@ rmq.startReceiving(redisClient).catch((err) => {
 //   .catch(err => {
 //     console.log(`Rabbit Error:${err}`);
 //   })
-
 
 // rabbitMqConsumer(rabbitMq, redisClient, config);
 
@@ -97,8 +80,16 @@ socketConnection().trySocket(new socketIO.Server(server, {
 
 
 // job Configuration
-// jobManager(nodeCron).run();
+// jobManager(nodeCron,redisClient).run();
 
+
+const runApplication = async () => {
+  await mqConnection.connect();
+  await redisConnection;
+
+}
+
+runApplication();
 
 
 // error handling middleware
@@ -106,7 +97,3 @@ app.use(errorHandlingMiddleware);
 
 // Expose app
 export default app;
-
-
-
-

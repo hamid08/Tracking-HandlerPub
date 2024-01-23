@@ -13,8 +13,20 @@ export default function trackingDataRepositoryMongoDB() {
     .skip(params.perPage * params.page - params.perPage)
     .limit(params.perPage);
 
+  const findAllSentFalseAndNumSendingAttempts = async (page:number,itemsPerPage:number) => await TrackingDataModel
+    .find({
+      sent: false, numSendingAttempts: { $lte: 500 }
+    })
+    .skip((page - 1) * itemsPerPage)
+    .limit(itemsPerPage)
+    .exec();
+
+
   const countAll = async (params: any) => await TrackingDataModel
     .countDocuments(omit(params, 'page', 'perPage'));
+
+  const countAllWithOutPagging = async () => await TrackingDataModel
+    .countDocuments();
 
   const findById = async (id: string) => await TrackingDataModel
     .findById(id);
@@ -25,7 +37,7 @@ export default function trackingDataRepositoryMongoDB() {
       .insertMany(trackingDataEntities)
       .then(result => {
         console.log(`Locations Inserted:${result.length}, IMEI: ${trackingDataEntities[0].imei}, Date: ${dateFormat}`);
-      })
+      }).catch(err => { console.error('Error Inserting Locations:', err); })
   };
 
   const updateManyByCodeSuccessSent = async (codeList: string[]) => {
@@ -79,6 +91,8 @@ export default function trackingDataRepositoryMongoDB() {
     countAll,
     findById,
     addRange,
+    countAllWithOutPagging,
+    findAllSentFalseAndNumSendingAttempts,
     deleteManyByCustomerIdAndSentIsTrue,
     deleteManyByCustomerIdAndSentIsTrueAndTrafficDate,
     updateManyByCodeSuccessSent,

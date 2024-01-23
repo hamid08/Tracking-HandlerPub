@@ -7,8 +7,9 @@
     "build": "rimraf dist && npx tsc",
     "prestart": "npm run build",
     "preserve": "npm run build",
-    "serve": "concurrently  \"nodemon  dist/app.js\"",
-    "start": "pm2 start dist/app.js  --no-daemon"
+    "serve": "concurrently  \"nodemon -r ./dist/instrumentation.js dist/app.js\"",
+    "start": "pm2 start dist/app.js --no-daemon",
+    "watch": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/app.js\""
   },
   "keywords": [],
   "author": "",
@@ -49,6 +50,7 @@
     "@types/lodash": "^4.14.202",
     "@types/morgan": "^1.9.9",
     "@types/node-cron": "^3.0.11",
-    "nodemon": "^3.0.3"
+    "nodemon": "^3.0.3",
+    "tsc-watch": "^6.0.4"
   }
 }

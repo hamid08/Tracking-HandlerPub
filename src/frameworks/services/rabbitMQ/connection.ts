@@ -1,111 +1,119 @@
+import client, { Connection, Channel, ConsumeMessage } from "amqplib";
+import config from "../../../config/config";
 
-export default function connection(amqp: any, lodash: any, config: any) {
+import rabbitService from "../../../application/services/rabbitService";
 
-  /**
-   * @var {Promise<MessageBroker>}
-   */
-  let instance: any;
+class RabbitMQConnection {
+  connection!: Connection;
+  channel!: Channel;
+  private connected!: Boolean;
+  private reconnectInterval!: number;
 
-  /**
-   * Broker for async messaging
-   */
-  class MessageBroker {
-    /**
-     * Trigger init connection method
-     */
+  async connect() {
+    if (this.connected && this.channel) return;
+    else this.connected = true;
 
-    queues: { [name: string]: any };
-    connection: any;
-    channel: any;
-    static getInstance: () => Promise<any>;
+    while (true) {
+      try {
+        this.reconnectInterval = 5000;
+
+        console.log(`⌛️ Connecting to Rabbit-MQ Server`);
+        this.connection = await client.connect(config.rabbit.uri);
+
+        console.log(`✅ Rabbit MQ Connection is ready`);
+        this.channel = await this.connection.createChannel();
+
+        console.log(`🛸 Created RabbitMQ Channel successfully`);
+        await this.startListeningToNewMessages();
+
+        this.connection.on('connect', () => {
+          console.log(`✅ Rabbit MQ Connection is ready`);
+        });
+
+        this.connection.on('disconnect', () => {
+          console.error(`Not connected to MQ Server, retrying in ${this.reconnectInterval}ms`);
+          setTimeout(this.connect.bind(this), this.reconnectInterval);
+        });
+
+        this.connection.on('error', (err: any) => {
+          console.error(`Rabbit MQ Connection error: ${err}`);
+        });
+
+        this.connection.on('close', () => {
+          console.error(`Rabbit MQ Connection closed`);
+        });
 
 
-    constructor() {
-      this.queues = {};
-      this.connection = null;
-      this.channel = null;
-    }
+        break;
 
-    /**
-     * Initialize connection to rabbitMQ
-     */
-    async init() {
-      this.connection = await amqp.connect(config.rabbit.uri);
-      this.channel = await this.connection.createChannel();
-      return this
-    }
-
-    /**
-     * Send message to queue
-     * @param {String} queue Queue name
-     * @param {Object} msg Message as Buffer
-     */
-    async send(queue:any, msg:any) {
-      if (!this.connection) {
-        await this.init();
+      } catch (error) {
+        console.error(`Failed to connect to Rabbit MQ: ${error}`);
+        await new Promise((resolve) => setTimeout(resolve, this.reconnectInterval));
       }
-      await this.channel.assertQueue(queue, {
-        durable: true, arguments: {
-          'x-queue-type': 'quorum'
-        }
-      });
-      this.channel.sendToQueue(queue, msg)
-    }
-
-    /**
-     * @param {String} queue Queue name
-     * @param {Function} handler Handler that will be invoked with given message and acknowledge function (msg, ack)
-     */
-    async subscribe(queue:any, handler: any) {
-      if (!this.connection) {
-        await this.init();
-      }
-      if (this.queues[queue]) {
-        const existingHandler = lodash.find(this.queues[queue], (h: any) => h === handler)
-        if (existingHandler) {
-          return () => this.unsubscribe(queue, existingHandler)
-        }
-        this.queues[queue].push(handler)
-        return () => this.unsubscribe(queue, handler)
-      }
-
-      await this.channel.assertQueue(queue, {
-        durable: true, arguments: {
-          'x-queue-type': 'quorum'
-        }
-      });
-      this.queues[queue] = [handler]
-      this.channel.consume(
-        queue,
-        async (msg: any) => {
-          const ack = lodash.once(() => this.channel.ack(msg))
-          this.queues[queue].forEach((h: (arg0: any, arg1: any) => any) => h(msg, ack))
-        }
-      );
-      return () => this.unsubscribe(queue, handler)
-    }
-
-    async unsubscribe(queue: string | number, handler: any) {
-      lodash.pull(this.queues[queue], handler)
     }
   }
 
-  /**
-   * @return {Promise<MessageBroker>}
-   */
-  MessageBroker.getInstance = async function () {
-    if (!instance) {
-      const broker = new MessageBroker();
-      instance = broker.init()
+  async startListeningToNewMessages() {
+    await this.channel.assertQueue(config.rabbit.trackingRelayQueue, {
+      durable: true,
+      arguments: {
+        'x-queue-type': 'quorum'
+      }
+    });
+
+    this.channel.consume(
+      config.rabbit.trackingRelayQueue,
+      async (msg) => {
+        {
+          if (!msg) {
+            return console.error(`Invalid incoming message`);
+          }
+
+          await handleIncomingTrackingData(msg);
+
+          this.channel.ack(msg);
+        }
+      },
+      {
+        noAck: false,
+      }
+    );
+  }
+
+  async sendToQueue(queue: string, message: any) {
+    try {
+      if (!this.channel) {
+        await this.connect();
+      }
+
+      await this.channel.assertQueue(queue, {
+        durable: true,
+        arguments: {
+          'x-queue-type': 'quorum'
+        }
+      });
+
+      this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
-    return instance;
-  };
+  }
 
-  const createRabbitClient = function createRabbitClient() {
-    return MessageBroker;
-  };
-
-  return {
-    createRabbitClient
-  };
 }
+
+const handleIncomingTrackingData = async (msg: ConsumeMessage) => {
+  try {
+    const parsedMessage = JSON.parse(msg?.content?.toString());
+
+    await rabbitService().saveTrackingData(parsedMessage);
+
+  } catch (error) {
+    console.error(`Error While Parsing the message`);
+  }
+};
+
+const mqConnection = new RabbitMQConnection();
+
+export default mqConnection;
+

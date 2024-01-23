@@ -1,23 +1,13 @@
-import config from '../../../config/config';
-import mongoose from 'mongoose';
-
-export default function connection() {
-
-  const mongoOptions = {
-    autoIndex: true,
-    maxPoolSize: 50,
-    wtimeoutMS: 2500,
-    connectTimeoutMS: 360000,
-    socketTimeoutMS: 360000,
-  };
-
-
+export default function connection(mongoose: any, config: any, options: any) {
   function connectToMongo() {
-    mongoose.connect(config.mongo.uri, mongoOptions).then(() => { },
-      (err: any) => {
-        console.info('Mongodb error', err);
-      }
-    )
+    mongoose
+      .connect(config.mongo.uri, options)
+      .then(
+        () => { },
+        (err: any) => {
+          console.info('Mongodb error', err);
+        }
+      )
       .catch((err: any) => {
         console.log('ERROR:', err);
       });

@@ -4,6 +4,9 @@ import config from '../../../config/config'
 
 let customerSockets: any = {};
 export default function connection() {
+
+    const _socketService = socketService();
+
     async function trySocket(io: any) {
 
         io.use((socket: any, next: any) => {
@@ -45,7 +48,7 @@ export default function connection() {
 
             //Customer Event Response
             socket.on('trackingResponse', async (data: any) => {
-                await socketService().HandleSocketResponse(data);
+                await _socketService.HandleSocketResponse(data);
 
             });
         });
@@ -57,9 +60,8 @@ export default function connection() {
 
         if (customerSockets[customerId]) {
             customerSockets[customerId].emit('receiveTrackingData', { locations, latestLocation });
-
         } else {
-            console.log('customer ' + customerId + ' not found connection');
+            console.log(`No socket connection found for customer with ID: ${customerId}`);
         }
     }
 

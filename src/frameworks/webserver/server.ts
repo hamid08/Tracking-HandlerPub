@@ -1,9 +1,33 @@
-import { createTerminus } from '@godaddy/terminus'
-import config from '../../config/config';
+import {createTerminus} from '@godaddy/terminus'
 
-export default function serverConfig(app: any, serverInit: any) {
+export default function serverConfig(app:any, mongoose:any, serverInit:any, config:any) {
   function healthCheck() {
+    // ERR_CONNECTING_TO_MONGO
+    if (
+      mongoose.connection.readyState === 0 ||
+      mongoose.connection.readyState === 3
+    ) {
+      return Promise.reject(new Error('Mongoose has disconnected'));
+    }
+    // CONNECTING_TO_MONGO
+    if (mongoose.connection.readyState === 2) {
+      return Promise.reject(new Error('Mongoose is connecting'));
+    }
+    // CONNECTED_TO_MONGO
     return Promise.resolve();
+  }
+
+  function onSignal() {
+    console.log('server is starting cleanup');
+    return new Promise<void>((resolve, reject) => {
+      mongoose
+        .disconnect(false)
+        .then(() => {
+          console.info('Mongoose has disconnected');
+          resolve();
+        })
+        .catch(reject);
+    });
   }
 
   function beforeShutdown() {
@@ -23,6 +47,7 @@ export default function serverConfig(app: any, serverInit: any) {
       healthChecks: {
         '/healthcheck': healthCheck
       },
+      onSignal,
       onShutdown,
       beforeShutdown
     }).listen(config.port, () => {

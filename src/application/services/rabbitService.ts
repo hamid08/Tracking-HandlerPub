@@ -2,7 +2,6 @@ import trackingDataRepositoryRedis from '../../frameworks/database/redis/trackin
 import trackingDataRepositoryMongoDB from '../../frameworks/database/mongoDB/repositories/trackingDataRepositoryMongoDB';
 import generator from '../utils/generator.js'
 import trackingDataModel from '../../entities/trackingData';
-
 import webSocket from '../../frameworks/services/socket/connection';
 
 
@@ -31,11 +30,12 @@ function createTrackingDataModel(element: any, trackerInfo: any) {
 
 }
 
-export default function rabbitService(redisClient: any) {
+export default function rabbitService() {
 
     async function saveTrackingData(data: any) {
+
         try {
-            const _redisRepository = trackingDataRepositoryRedis(redisClient);
+            const _redisRepository = trackingDataRepositoryRedis();
             const _mongoRepository = trackingDataRepositoryMongoDB();
             const _webSocket = webSocket();
 
@@ -77,6 +77,7 @@ export default function rabbitService(redisClient: any) {
 
                 newTrackingDataList.push(newTrackingData);
             })
+
             try {
                 await _mongoRepository.addRange(newTrackingDataList);
             } catch (err) {

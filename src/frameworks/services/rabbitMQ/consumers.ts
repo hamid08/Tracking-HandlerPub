@@ -4,7 +4,7 @@ import rabbitService from '../../../application/services/rabbitService.js';
 
 export default function consumers(rabbitMq: any, redisClient: any, config: any) {
 
-    var _rabbitService = rabbitService(redisClient);
+    var _rabbitService = rabbitService();
     const trackingRelayQueue = config.rabbit.trackingRelayQueue;
     try {
         console.log('Ready for Consume messages in the %s queue...', trackingRelayQueue);
