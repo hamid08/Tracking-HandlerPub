@@ -1,5 +1,5 @@
-import trackingDataRepositoryMongoDB from '../../frameworks/database/mongoDB/repositories/trackingDataRepositoryMongoDB';
-import trackingDataRepositoryRedis from '../../frameworks/database/redis/trackingDataRepositoryRedis';
+import trackingDataRepositoryMongoDB from '../../frameworks/database/mongoDB/repositories/trackingDataRepository';
+import trackingDataRepositoryRedis from '../../frameworks/database/redis/trackingDataRepository';
 import webSocket from '../../frameworks/services/socket/connection';
 
 
@@ -34,10 +34,12 @@ export default function jobService() {
                 var trackingDataResend = await trackingDataRepositoryMongoDB().findAllSentFalseAndNumSendingAttempts(page, 10);
                 if (trackingDataResend == null || trackingDataResend.length < 1) return;
 
-
+ 
                 trackingDataResend.forEach(async (data) => {
                     try {
-                        await webSocket().sendLocationsToCustomer([data], data, data.customerId);
+                        const locations: Array<object> = [];
+                        locations.push(data);
+                        await webSocket().sendLocationsToCustomer(locations, data, data.customerId);
                     } catch (err) {
                         console.error(err);
                     }

@@ -1,5 +1,5 @@
-import trackingDataRepositoryRedis from '../../frameworks/database/redis/trackingDataRepositoryRedis';
-import trackingDataRepositoryMongoDB from '../../frameworks/database/mongoDB/repositories/trackingDataRepositoryMongoDB';
+import trackingDataRepositoryRedis from '../../frameworks/database/redis/trackingDataRepository';
+import trackingDataRepositoryMongoDB from '../../frameworks/database/mongoDB/repositories/trackingDataRepository';
 import generator from '../utils/generator.js'
 import trackingDataModel from '../../entities/trackingData';
 import webSocket from '../../frameworks/services/socket/connection';
@@ -40,7 +40,7 @@ export default function rabbitService() {
             const _webSocket = webSocket();
 
             //Check Is Not Null Locations
-            if (data == null || data.locations.length < 1) return;
+            if (data == null || data.locations.length < 1) return false;
 
             //CheckIMEI For Save
             var trackerInfo = await _redisRepository.getDevice(data.latestLocation.imei);

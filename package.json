@@ -8,8 +8,7 @@
     "prestart": "npm run build",
     "preserve": "npm run build",
     "serve": "concurrently  \"nodemon -r ./dist/instrumentation.js dist/app.js\"",
-    "start": "pm2 start dist/app.js --no-daemon",
-    "watch": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/app.js\""
+    "start": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/app.js\""
   },
   "keywords": [],
   "author": "",

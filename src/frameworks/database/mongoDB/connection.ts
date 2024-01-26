@@ -1,3 +1,4 @@
+
 export default function connection(mongoose: any, config: any, options: any) {
   function connectToMongo() {
     mongoose
@@ -8,14 +9,14 @@ export default function connection(mongoose: any, config: any, options: any) {
           console.info('Mongodb error', err);
         }
       )
-      .catch((err: any) => {
+      .catch((err: any) => { 
         console.log('ERROR:', err);
       });
   }
 
   mongoose.connection.on('connected', () => {
-    console.info('Connected to MongoDB!');
-  });
+    console.log('✅ Mongo DB Connection is connect');
+  }); 
 
   mongoose.connection.on('reconnected', () => {
     console.info('MongoDB reconnected!');

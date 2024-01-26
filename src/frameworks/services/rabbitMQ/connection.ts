@@ -1,15 +1,15 @@
 import client, { Connection, Channel, ConsumeMessage } from "amqplib";
 import config from "../../../config/config";
-
 import rabbitService from "../../../application/services/rabbitService";
+import moment from 'moment';
 
 class RabbitMQConnection {
   connection!: Connection;
   channel!: Channel;
-  private connected!: Boolean;
-  private reconnectInterval!: number;
+  private connected: boolean = false;
+  private reconnectInterval: number = 5000;
 
-  async connect() {
+  async connect(): Promise<void> {
     if (this.connected && this.channel) return;
     else this.connected = true;
 
@@ -23,7 +23,7 @@ class RabbitMQConnection {
         console.log(`✅ Rabbit MQ Connection is ready`);
         this.channel = await this.connection.createChannel();
 
-        console.log(`🛸 Created RabbitMQ Channel successfully`);
+        console.log(`✅ Created RabbitMQ Channel successfully`);
         await this.startListeningToNewMessages();
 
         this.connection.on('connect', () => {
@@ -43,6 +43,17 @@ class RabbitMQConnection {
           console.error(`Rabbit MQ Connection closed`);
         });
 
+        this.channel.on('close', () => {
+          console.error(`Rabbit MQ Channel closed`);
+          // Handle channel closure here
+          // You can reconnect or perform other recovery actions
+          this.connect();
+        });
+
+
+        this.channel.on('error', (err: any) => {
+          console.error(`Rabbit MQ Channel error: ${err}`);
+        });
 
         break;
 
@@ -53,34 +64,47 @@ class RabbitMQConnection {
     }
   }
 
-  async startListeningToNewMessages() {
-    await this.channel.assertQueue(config.rabbit.trackingRelayQueue, {
-      durable: true,
-      arguments: {
-        'x-queue-type': 'quorum'
-      }
-    });
+  async startListeningToNewMessages(): Promise<void> {
+    try {
+      await this.channel.assertQueue(config.rabbit.trackingRelayQueue, {
+        durable: true,
+        arguments: {
+          'x-queue-type': 'quorum'
+        }
+      });
 
-    this.channel.consume(
-      config.rabbit.trackingRelayQueue,
-      async (msg) => {
-        {
+      this.channel.consume(
+        config.rabbit.trackingRelayQueue,
+        async (msg: ConsumeMessage | null) => {
           if (!msg) {
             return console.error(`Invalid incoming message`);
           }
 
-          await handleIncomingTrackingData(msg);
+          try {
+            const parsedMessage = JSON.parse(msg?.content?.toString());
+            const success: any = await rabbitService().saveTrackingData(parsedMessage);
 
-          this.channel.ack(msg);
+            if (success) {
+              this.channel.ack(msg);
+            } else {
+              console.error(`Failed to save tracking data for message: ${msg.content.toString()}`);
+              this.channel.nack(msg, false, true);
+            }
+          } catch (error) {
+            console.error(`Error while processing message: ${error}`);
+            this.channel.nack(msg, false, true);
+          }
+        },
+        {
+          noAck: false,
         }
-      },
-      {
-        noAck: false,
-      }
-    );
+      );
+    } catch (error) {
+      console.error(`Failed to start listening to new messages: ${error}`);
+    }
   }
 
-  async sendToQueue(queue: string, message: any) {
+  async sendToQueue(queue: string, message: any): Promise<void> {
     try {
       if (!this.channel) {
         await this.connect();
@@ -94,26 +118,16 @@ class RabbitMQConnection {
       });
 
       this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
+      const dateFormat = moment().format('YYYY-MM-DD HH:mm:ss');
+      console.log(`[x] Publish To %s ${queue} ${dateFormat}`);
     } catch (error) {
-      console.error(error);
+      console.error(`Failed to send message to queue: ${error}`);
       throw error;
     }
   }
 
 }
 
-const handleIncomingTrackingData = async (msg: ConsumeMessage) => {
-  try {
-    const parsedMessage = JSON.parse(msg?.content?.toString());
-
-    await rabbitService().saveTrackingData(parsedMessage);
-
-  } catch (error) {
-    console.error(`Error While Parsing the message`);
-  }
-};
-
 const mqConnection = new RabbitMQConnection();
 
 export default mqConnection;
-

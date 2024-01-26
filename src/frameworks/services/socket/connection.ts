@@ -57,7 +57,6 @@ export default function connection() {
 
 
     async function sendLocationsToCustomer(locations: any, latestLocation: any, customerId: any) {
-
         if (customerSockets[customerId]) {
             customerSockets[customerId].emit('receiveTrackingData', { locations, latestLocation });
         } else {
